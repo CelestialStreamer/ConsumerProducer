@@ -15,11 +15,11 @@
 *    Program terminates after number of seconds given from command line.
 ************************************************************************/
 #include <stdlib.h> /* rand() */
+#include <stdio.h>
+#include <string.h> /* memset() */
+#include <unistd.h> /* sleep() */
 #include <pthread.h>
 #include <semaphore.h>
-#include <unistd.h> /* sleep() */
-#include <stdlib.h>
-#include <stdio.h>
 
 #define BUFFER_SIZE 5 /* number of resources available */
 
@@ -177,7 +177,7 @@ void createThreads(pthread_t **pThreads, int pNum,
    {
       int *id = (int*)malloc(sizeof (int));
       *id = i + 1; /* Producer id (Not related to process id) */
-      s = pthread_create(pThreads[i], NULL, producer, (void*)id);
+      s = pthread_create(&(*pThreads)[i], NULL, producer, id);
 
       /* Check to see if error in thread creation. Exit if an error. */
       if (s != 0)
@@ -198,7 +198,7 @@ void createThreads(pthread_t **pThreads, int pNum,
    {
       int *id = (int*)malloc(sizeof (int));
       *id = i + 1; /* Consumer id (Not related to process id) */
-      s = pthread_create(cThreads[i], NULL, consumer, (void*)id);
+      s = pthread_create(&(*cThreads)[i], NULL, consumer, id);
 
       /* Check to see if error in thread creation. Exit if an error. */
       if (s != 0)
@@ -221,7 +221,7 @@ void cancelThreads(pthread_t **pThreads, int pNum,
    /* Cancel all producer threads */
    for (i = 0; i < pNum; i++)
    {
-      int s = pthread_cancel(*pThreads[i]);
+      int s = pthread_cancel((*pThreads)[i]);
       if (s != 0)
       {
          fprintf(stderr, "Couldn't cancel thread\n");
@@ -232,7 +232,7 @@ void cancelThreads(pthread_t **pThreads, int pNum,
    /* Cancel all consumer threads */
    for (i = 0; i < cNum; i++)
    {
-      int s = pthread_cancel(*cThreads[i]);
+      int s = pthread_cancel((*cThreads)[i]);
       if (s != 0)
       {
          fprintf(stderr, "Couldn't cancel thread\n");
@@ -251,8 +251,6 @@ void cancelThreads(pthread_t **pThreads, int pNum,
 ************************************************************************/
 int main(int argc, char **argv)
 {
-   int i;
-
    pthread_t *producers;
    pthread_t *consumers;
 
@@ -266,9 +264,8 @@ int main(int argc, char **argv)
    int nProducers = atoi(argv[2]); /* number of producers */
    int nConsumers = atoi(argv[3]); /* number of consumers */
 
-   /* 2. Initialize buffer [good for error checking but not really needed]*/
-   for (i = 0; i < BUFFER_SIZE; i++)
-      buffer[i] = 0;
+   /* 2. Initialize buffer [good for error checking but not really needed] */
+   memset(buffer, 0, BUFFER_SIZE * sizeof (bufferItem));
 
    /* 3. Initialize the mutex lock and semaphores */
    initializeMutexAndSemaphores();
